@@ -127,7 +127,7 @@ const loginAdmin = (req, res) => {
     const token = jwt.sign({ email, role: "admin" }, SECRET_KEY, { expiresIn: "2h" });
 
     res.cookie("adminToken", token, {
-      secure: false,     
+      secure: true,     
       sameSite: "Strict", 
       maxAge: 2 * 60 * 60 * 1000, // Expire dans 2h
     });
