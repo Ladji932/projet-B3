@@ -69,9 +69,8 @@ module.exports.Login = async (req, res) => {
       activeUsers.set(findUser._id.toString(), expiration);
       console.log(activeUsers)
 
-      res.cookie('auth_token', token, {
-        signed: false, 
-        secure: false, 
+      res.cookie('auth_token', token, { 
+        secure: true, 
         httpOnly: false,
         maxAge: 3600000, 
     });
