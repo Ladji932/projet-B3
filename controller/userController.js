@@ -70,8 +70,9 @@ module.exports.Login = async (req, res) => {
       console.log(activeUsers)
 
       res.cookie('auth_token', token, { 
-        secure: true, 
-        httpOnly: false,
+       secure: true, 
+       httpOnly: false, // ou false selon vos besoins
+       sameSite: 'None', // Ajoutez cette ligne si nécessaire
         maxAge: 3600000, 
     });
     
