@@ -14,12 +14,18 @@ app.use(express.urlencoded({ extended: true }))
 app.use(helmet());
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
-console.log(process.env.COOKIE_SECRET)
+const dbPassword = process.env.DB_PASSWORD; 
+const dbName = process.env.DB_NAME; 
 
-mongoose.connect('mongodb://localhost:27017/fil-rouge')
-.then(() => console.log("connected"))
-.catch(err => console.log("MongoDB connection error:", err));
+const uri = `mongodb+srv://ladji93:${dbPassword}@cluster0.29c8l.mongodb.net/${dbName}?retryWrites=true&w=majority`;
 
+mongoose.connect(uri)
+  .then(() => {
+    console.log('Connexion réussie à la base de données');
+  })
+  .catch(err => {
+    console.error('Erreur de connexion à la base de données', err);
+  });
 
 app.use(cors({
     origin: ['http://localhost:5173', 'https://projet-b3.onrender.com'],
