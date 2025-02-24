@@ -71,8 +71,8 @@ module.exports.Login = async (req, res) => {
 
       res.cookie('auth_token', token, { 
        secure: true, 
-       httpOnly: false, // ou false selon vos besoins
-       sameSite: 'None', // Ajoutez cette ligne si nécessaire
+       httpOnly: false, 
+       sameSite: 'None',
         maxAge: 3600000, 
     });
     
@@ -363,11 +363,6 @@ module.exports.withdrawEvent = async (req, res) => {
 
 
 
-
-
-
-
-
 module.exports.getUserEvent = async (req, res) => {
  
   const { eventIds } = req.body;
@@ -484,3 +479,5 @@ cron.schedule("0 0 */5 * *", async () => {
     }
   }
 });
+
+

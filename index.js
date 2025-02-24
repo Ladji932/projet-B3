@@ -17,7 +17,9 @@ app.use(cookieParser(process.env.COOKIE_SECRET));
 const dbPassword = process.env.DB_PASSWORD; 
 const dbName = process.env.DB_NAME; 
 
-const uri = `mongodb+srv://ladji93:${dbPassword}@cluster0.29c8l.mongodb.net/${dbName}?retryWrites=true&w=majority`;
+//En ligneconst uri = `mongodb+srv://ladji93:${dbPassword}@cluster0.29c8l.mongodb.net/${dbName}?retryWrites=true&w=majority`;
+const uri = `mongodb://localhost:27017/EventEase`;
+
 
 mongoose.connect(uri)
   .then(() => {

@@ -1,23 +1,12 @@
 require("dotenv").config();
 const EventList = require("../model/eventList");
 const userList = require('../model/model');
+const { OAuth2Client } = require('google-auth-library');
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const client = new OAuth2Client("772746900391-ibsq5i8d9ahpv2o4c3uos0b15hab77sh.apps.googleusercontent.com");
+const sharp = require('sharp');
 const multer = require("multer");
-const UserList = require("../model/model");
-const secretKey = process.env.SECRET_KEY;
-const { ADMIN_EMAIL, ADMIN_PASSWORD, SECRET_KEY } = process.env;
-
-// Middleware
-module.exports.checkAdmin = (req, res, next) => {
-  if (req.user.role !== "admin") {
-    return res.status(403).json({
-      message: "Accès refusé. Vous n'êtes pas administrateur.",
-    });
-  }
-  next();
-};
-
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
@@ -32,16 +21,80 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+
 const upload = multer({
   storage,
   fileFilter,
 }).single("image");
 
-const CreateEvents = async (req, res) => {
-  const { title, description, category, location, contactInfo, createdBy , dateEvent , dateCreated} = req.body;
+const UserList = require("../model/model");
+const secretKey = process.env.SECRET_KEY;
+const { ADMIN_EMAIL, ADMIN_PASSWORD, SECRET_KEY } = process.env;
 
-  if (!title || !description || !category || !dateEvent || !location || !dateCreated) {
-    return res.status(400).json({ message: "Tous les champs obligatoires doivent être remplis." });
+// Middleware
+module.exports.checkAdmin = (req, res, next) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({
+      message: "Accès refusé. Vous n'êtes pas administrateur.",
+    });
+  }
+  next();
+};
+
+
+
+const loginWithGoogle = async (req, res) => {
+  const { idToken } = req.body;
+
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: idToken,
+      audience: "772746900391-ibsq5i8d9ahpv2o4c3uos0b15hab77sh.apps.googleusercontent.com",
+    });
+    const payload = ticket.getPayload();
+
+    let user = await userList.findOne({ googleId: payload.sub });
+
+    // Si l'utilisateur n'existe pas, crée un nouveau compte
+    if (!user) {
+      user = new userList({
+        googleId: payload.sub,
+        email: payload.email,
+        username: payload.name,
+      });
+      await user.save();
+    }
+
+    const token = jwt.sign(
+      { userId: user._id, email: user.email, role: user.role }, 
+      process.env.SECRET_KEY, 
+      { expiresIn: "7d" } 
+    );
+
+    res.cookie("auth_token", token, {
+      secure: true, 
+      httpOnly: false, 
+      sameSite: 'None',
+       maxAge: 3600000, 
+    });
+
+    res.status(200).json({ message: "Connexion réussie", user });
+
+  } catch (error) {
+    console.error("Erreur lors de la connexion Google", error);
+    res.status(500).json({ message: "Erreur de serveur" });
+  }
+};
+
+
+
+
+
+const CreateEvents = async (req, res) => {
+  const { title, description, category, location, contactInfo, createdBy, dateEvent, dateCreated, userId } = req.body;
+
+  if (!title || !description || !category || !dateEvent || !location || !dateCreated || !userId) {
+    return res.status(400).json({ message: "Tous les champs obligatoires, y compris userId, doivent être remplis." });
   }
 
   let parsedContactInfo;
@@ -58,21 +111,44 @@ const CreateEvents = async (req, res) => {
   }
 
   try {
+    let imageBuffer;
+
+    // Vérifiez si l'image est un GIF
+    if (req.file.mimetype === 'image/gif') {
+      console.log('L\'image est au format GIF. Aucune conversion nécessaire.');
+      imageBuffer = req.file.buffer; // Pas besoin de conversion
+    } else if (req.file.mimetype === 'image/webp') {
+      console.log('L\'image est déjà au format WebP.');
+      imageBuffer = req.file.buffer; // Pas besoin de conversion
+    } else {
+      console.log('Conversion de l\'image en WebP...');
+      imageBuffer = await sharp(req.file.buffer)
+        .webp({ quality: 80 }) // Ajustez la qualité selon vos besoins
+        .toBuffer();
+      console.log('Image convertie en WebP avec succès.');
+    }
+
+    // Vérifiez les informations sur le buffer de l'image
+    console.log(`Taille du buffer de l'image: ${imageBuffer.length} octets`);
+
     const newEvent = new EventList({
+      userId,
       title,
       description,
       category,
       dateEvent,
       dateCreated,
       location,
-      image: req.file.buffer,
+      image: imageBuffer, // Stocker l'image (GIF ou WebP)
       contactInfo: parsedContactInfo,
       createdBy,
     });
 
     await newEvent.save();
+    console.log('Événement créé avec succès.');
     res.status(201).json({ message: "Événement créé avec succès.", event: newEvent });
   } catch (error) {
+    console.error("Erreur lors de la création de l'événement:", error);
     res.status(500).json({ message: "Erreur lors de la création de l'événement.", error });
   }
 };
@@ -125,17 +201,92 @@ const loginAdmin = (req, res) => {
   const { email, password } = req.body;
   if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
     const token = jwt.sign({ email, role: "admin" }, SECRET_KEY, { expiresIn: "2h" });
+    console.log(token)
 
     res.cookie("adminToken", token, {
-      secure: true,     
-      sameSite: "Strict", 
-      maxAge: 2 * 60 * 60 * 1000, // Expire dans 2h
-    });
+      secure: true, 
+      httpOnly: false, 
+      sameSite: 'None',
+       maxAge: 3600000, 
+cl    });
 
     return res.json({ message: "Connexion réussie", user: { email, role: "admin" } });
   }
   res.status(401).json({ message: "Identifiants incorrects" });
+  console.log("recu")
+
 };
+
+
+
+const deleteEventUser = async (req, res) => {
+  const { eventId } = req.params;
+  const { userId } = req.body;
+
+  try {
+    const event = await EventList.findById(eventId);
+
+    if (!event) {
+      return res.status(404).json({ message: "Événement non trouvé." });
+    }
+
+    if (event.userId.toString() !== userId) {
+      console.log("Accès refusé. Vous n'êtes pas l'auteur de cet événement.")
+      return res.status(403).json({ message: "Accès refusé. Vous n'êtes pas l'auteur de cet événement." });
+    }
+
+    await EventList.findByIdAndDelete(eventId);
+    res.status(200).json({ message: "Événement supprimé avec succès." });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur lors de la suppression de l'événement.", error });
+  }
+};
+
+
+
+const updateEventUser = async (req, res) => {
+  const { idUser, eventId } = req.params;
+  const { title, description, location, category, dateEvent } = req.body;
+  const image = req.file;
+
+  try {
+    const event = await EventList.findById(eventId);
+
+    if (!event) {
+      return res.status(404).json({ message: "Événement non trouvé." });
+    }
+
+    event.title = title || event.title;
+    event.description = description || event.description;
+    event.location = location || event.location;
+    event.category = category || event.category;
+    event.dateEvent = dateEvent || event.dateEvent;
+    
+    if (image) {
+      event.image = image.buffer; // Assurez-vous d'assigner uniquement le buffer
+    }
+
+    await event.save();
+    res.status(200).json({ message: "Événement mis à jour avec succès.", event });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur lors de la mise à jour de l'événement.", error });
+    console.log(error);
+  }
+};
+const fetchCreatedEvents = async (req, res) => {
+  const { userEmail } = req.params;
+
+  try {
+    const events = await EventList.find({ createdBy: userEmail });
+    res.json(events);
+  } catch (error) {
+    res.status(500).json({ message: "Erreur lors de la récupération des événements créés." });
+    console.error("Erreur lors de la récupération des événements créés:", error);
+
+  }
+};
+
+
 
 
 
@@ -145,5 +296,9 @@ module.exports = {
   fetchEvents,
   fetchUser,
   loginAdmin,
-  checkAuth
+  checkAuth,
+  deleteEventUser,
+  fetchCreatedEvents,
+  updateEventUser,
+  loginWithGoogle
 };

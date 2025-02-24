@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const cron = require("node-cron");
 
 const {
     showQrCode,
@@ -12,8 +11,10 @@ const {
     FindUser,
     getUserEvent,
 } = require("../controller/userController");
-const { CreateEvents, upload, fetchEvents, fetchUser, loginAdmin, checkAuth } = require("../controller/userAdmin"); 
+const { CreateEvents, upload, fetchEvents, fetchUser, loginAdmin, checkAuth, deleteEventUser, fetchCreatedEvents, updateEventUser, loginWithGoogle } = require("../controller/userAdmin"); 
 const authenticateToken = require("../middleware/authenticateToken");
+const checkEventOwner = require("../middleware/checkEventOwner");
+
 
 router.get("/", function(req, res) {res.send("Accueil");});
 router.get("/qrcode/:username/:email", showQrCode);
@@ -29,6 +30,10 @@ router.post("/fetch-user-events", getUserEvent);
 router.get("/user-events", authenticateToken, FindUser);
 router.get("/checkAuth", checkAuth);
 router.post("/adminLogin", loginAdmin);
+router.delete("/event/:eventId", deleteEventUser);
+router.post("/update/:eventId/:idUser", upload, updateEventUser);
+router.get('/fetch-created-events/:userEmail', fetchCreatedEvents);
+router.post("/loginGoogle",loginWithGoogle)
 
 
 
