@@ -70,7 +70,8 @@ module.exports.Login = async (req, res) => {
       console.log(activeUsers)
 
       res.cookie('auth_token', token, { 
-       secure: true, 
+      domain: 'projet-b3.onrender.com',
+       secure: false, 
        httpOnly: false, 
        sameSite: 'None',
         maxAge: 3600000, 

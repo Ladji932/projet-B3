@@ -72,7 +72,8 @@ const loginWithGoogle = async (req, res) => {
     );
 
     res.cookie("auth_token", token, {
-      secure: true, 
+      domain: 'projet-b3.onrender.com',
+      secure: false, 
       httpOnly: false, 
       sameSite: 'None',
        maxAge: 3600000, 
@@ -204,7 +205,8 @@ const loginAdmin = (req, res) => {
     console.log(token)
 
     res.cookie("adminToken", token, {
-      secure: true, 
+      domain: 'projet-b3.onrender.com',
+      secure: false, 
       httpOnly: false, 
       sameSite: 'None',
        maxAge: 3600000, 
