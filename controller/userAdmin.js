@@ -73,7 +73,7 @@ const loginWithGoogle = async (req, res) => {
 
     res.cookie("auth_token", token, {
       domain: 'projet-b3.onrender.com',
-      secure: false, 
+      secure: true, 
       httpOnly: false, 
       sameSite: 'None',
        maxAge: 3600000, 
@@ -206,11 +206,11 @@ const loginAdmin = (req, res) => {
 
     res.cookie("adminToken", token, {
       domain: 'projet-b3.onrender.com',
-      secure: false, 
+      secure: true, 
       httpOnly: false, 
       sameSite: 'None',
        maxAge: 3600000, 
-cl    });
+    });
 
     return res.json({ message: "Connexion réussie", user: { email, role: "admin" } });
   }
