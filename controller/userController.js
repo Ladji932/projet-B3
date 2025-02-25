@@ -44,7 +44,7 @@ module.exports.showQrCode = async (req,res) => {
     }
 }
 
-
+/*
 module.exports.Login = async (req, res) => {
   const { email, password } = req.body;
   console.log(email,password)
@@ -86,7 +86,9 @@ module.exports.Login = async (req, res) => {
       console.error(error);
       return res.status(500).json({ message: "Erreur serveur" });
   }
-}
+}*/
+
+
 
 
 

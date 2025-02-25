@@ -4,6 +4,7 @@ const userList = require('../model/model');
 const { OAuth2Client } = require('google-auth-library');
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const activeUsers = new Map();
 const client = new OAuth2Client("772746900391-ibsq5i8d9ahpv2o4c3uos0b15hab77sh.apps.googleusercontent.com");
 const sharp = require('sharp');
 const multer = require("multer");
@@ -41,6 +42,41 @@ module.exports.checkAdmin = (req, res, next) => {
   next();
 };
 
+const Login = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+      // Recherche de l'utilisateur par email
+      const findUser = await userList.findOne({ email });
+      if (!findUser) {
+          console.log("User not found");
+          return res.status(404).json({ message: "Utilisateur non trouvé" });
+      }
+
+      // Vérification du mot de passe
+      if (!findUser.password) {
+          console.log("Password not found for user");
+          return res.status(401).json({ message: "Mot de passe non trouvé" });
+      }
+
+      const PasswordValidator = await bcrypt.compare(password, findUser.password);
+      if (!PasswordValidator) {
+          return res.status(401).json({ message: "Mot de passe incorrect" });
+      }
+
+      // Génération du token
+      const token = jwt.sign({ userId: findUser._id, email: findUser.email }, secretKey, { expiresIn: '1h' });
+
+      // Envoie du token dans la réponse
+      res.status(200).json({ message: 'Connexion réussie', token });
+
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Erreur serveur" });
+  }
+}
+
+
 
 
 const loginWithGoogle = async (req, res) => {
@@ -68,18 +104,12 @@ const loginWithGoogle = async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role }, 
       process.env.SECRET_KEY, 
-      { expiresIn: "7d" } 
+      { expiresIn: "7d" }
     );
 
-    res.cookie("auth_token", token, {
-      domain: 'projet-b3.onrender.com',
-      secure: true, 
-      httpOnly: false, 
-      sameSite: 'None',
-       maxAge: 3600000, 
-    });
+    console.log("Token généré:", token); // Affiche le token dans la console du serveur
 
-    res.status(200).json({ message: "Connexion réussie", user });
+    res.status(200).json({ message: "Connexion réussie", user, token });
 
   } catch (error) {
     console.error("Erreur lors de la connexion Google", error);
@@ -184,8 +214,12 @@ const fetchUser = async (req, res) => {
 };
 
 
-const checkAuth = (req,res) => {
-  const token = req.cookies.adminToken; 
+const checkAuth = (req, res) => {
+  const authHeader = req.headers.authorization;
+  console.log(authHeader)
+  const token = authHeader && authHeader.split(' ')[1]; 
+  console.log(token)
+
   if (!token) return res.status(401).json({ message: "Non autorisé" });
 
   try {
@@ -200,23 +234,14 @@ const checkAuth = (req,res) => {
 
 const loginAdmin = (req, res) => {
   const { email, password } = req.body;
+
   if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
     const token = jwt.sign({ email, role: "admin" }, SECRET_KEY, { expiresIn: "2h" });
-    console.log(token)
 
-    res.cookie("adminToken", token, {
-      domain: 'projet-b3.onrender.com',
-      secure: true, 
-      httpOnly: false, 
-      sameSite: 'None',
-       maxAge: 3600000, 
-    });
-
-    return res.json({ message: "Connexion réussie", user: { email, role: "admin" } });
+    return res.json({ message: "Connexion réussie", token, user: { email, role: "admin" } });
   }
-  res.status(401).json({ message: "Identifiants incorrects" });
-  console.log("recu")
 
+  res.status(401).json({ message: "Identifiants incorrects" });
 };
 
 
@@ -302,5 +327,6 @@ module.exports = {
   deleteEventUser,
   fetchCreatedEvents,
   updateEventUser,
-  loginWithGoogle
+  loginWithGoogle,
+  Login
 };

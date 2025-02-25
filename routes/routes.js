@@ -5,13 +5,12 @@ const {
     showQrCode,
     Signup,
     DeleteUser,
-    Login,
     participateEvent,
     withdrawEvent,
     FindUser,
     getUserEvent,
 } = require("../controller/userController");
-const { CreateEvents, upload, fetchEvents, fetchUser, loginAdmin, checkAuth, deleteEventUser, fetchCreatedEvents, updateEventUser, loginWithGoogle } = require("../controller/userAdmin"); 
+const { CreateEvents, upload, fetchEvents, fetchUser, loginAdmin, checkAuth, deleteEventUser, fetchCreatedEvents, updateEventUser, loginWithGoogle , Login } = require("../controller/userAdmin"); 
 const authenticateToken = require("../middleware/authenticateToken");
 const checkEventOwner = require("../middleware/checkEventOwner");
 
@@ -19,7 +18,7 @@ const checkEventOwner = require("../middleware/checkEventOwner");
 router.get("/", function(req, res) {res.send("Accueil");});
 router.get("/qrcode/:username/:email", showQrCode);
 router.post("/fetchSignup", Signup);
-router.post("/loginManage", Login);
+router.post("/loginManage",Login);
 router.post("/createEvent", upload, CreateEvents); 
 router.get("/fetch-events", fetchEvents);
 router.delete("/user/:_id", DeleteUser);
@@ -34,6 +33,7 @@ router.delete("/event/:eventId", deleteEventUser);
 router.post("/update/:eventId/:idUser", upload, updateEventUser);
 router.get('/fetch-created-events/:userEmail', fetchCreatedEvents);
 router.post("/loginGoogle",loginWithGoogle)
+
 
 
 
