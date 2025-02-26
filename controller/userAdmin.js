@@ -216,9 +216,11 @@ const fetchUser = async (req, res) => {
 
 const checkAuth = (req, res) => {
   const authHeader = req.headers.authorization;
-  console.log(authHeader)
-  const token = authHeader && authHeader.split(' ')[1]; 
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  console.log("requetes")
   console.log(token)
+
 
   if (!token) return res.status(401).json({ message: "Non autorisé" });
 

@@ -23,26 +23,6 @@ transporter = nodemailer.createTransport({
     }
 });
 
-module.exports.showQrCode = async (req,res) => {
-    const { username, email } = req.params;
-    const qrData = `User : ${username} , Email : ${email}`;
-    
-    try {
-        const qrCodeUrl = await Qrcode.toDataURL(qrData);
-        console.log("QR Code généré avec succès");
-        res.send(`
-            <html>
-                <body>
-                    <h1>Votre QR Code</h1>
-                    <img src="${qrCodeUrl}" alt="QR Code" />
-                </body>
-            </html>
-        `);
-    } catch (err) {
-        console.error("Erreur lors de la génération du QR code :", err);
-        res.status(500).send("Erreur lors de la génération du QR code.");
-    }
-}
 
 /*
 module.exports.Login = async (req, res) => {
@@ -261,55 +241,24 @@ module.exports.participateEvent = async (req, res) => {
     await user.save();
     await event.save();
 
-    // Générer le QR code avec l'URL de l'événement ou des informations de participation
-    const qrData = `Utilisateur: ${user.username}, Événement: ${event.title}, ID de l'événement: ${eventId}`;
+    const mailOptions = {
+      from: '"maigaladji47@gmail.com"',
+      to: user.email,
+      subject: `Merci de participer à l'événement: ${event.title}`,
+      html: `
+        <h1>Merci de votre participation, ${user.username}!</h1>
+        <p>Nous sommes heureux de vous compter parmi les participants à l'événement "${event.title}".</p>
+        <p>À bientôt à l'événement !</p>
+      `,
+    };
 
-    const qrCodePath = path.join(__dirname, 'public', 'qrCodes', 'qrCode.png');
-
-    // Créer le dossier si nécessaire
-    const qrCodeDir = path.dirname(qrCodePath);
-    if (!fs.existsSync(qrCodeDir)) {
-      fs.mkdirSync(qrCodeDir, { recursive: true });
-    }
-
-    // Générer le fichier QR code
-    Qrcode.toFile(qrCodePath, qrData, (err) => {
-      if (err) {
-        console.log(err);
-        return res.status(500).json({ message: "Erreur lors de la génération du QR code." });
+    // Envoyer l'email
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Erreur lors de l'envoi de l'email", error);
+        return res.status(500).json({ message: "Erreur lors de l'envoi de l'email" });
       }
-
-      // URL de l'image de l'événement
-      const eventImageUrl = event.image || 'url_de_l_image_event_par_defaut.jpg'; // Remplacer par l'URL de l'image événement
-
-      // URL du QR code généré sur ton serveur ou dans un dossier accessible publiquement
-      const qrCodeUrl = `http://tonsite.com/public/qrCodes/qrCode.png`;
-
-      // Options de l'email
-      const mailOptions = {
-        from: '"maigaladji47@gmail.com"',
-        to: user.email,
-        subject: `Merci de participer à l'événement: ${event.title}`,
-        html: `
-          <h1>Merci de votre participation, ${user.username}!</h1>
-          <p>Nous sommes heureux de vous compter parmi les participants à l'événement "${event.title}".</p>
-          <p>Voici l'image de l'événement :</p>
-          <img src="${eventImageUrl}" alt="Image de l'événement" width="500" />
-          <p>Voici votre QR code pour l'événement :</p>
-          <img src="${qrCodeUrl}" alt="QR Code" />
-          <p>Pour voir le QR code seul, cliquez <a href="http://tonsite.com/qr-code/${eventId}">ici</a>.</p>
-          <p>À bientôt à l'événement !</p>
-        `,
-      };
-
-      // Envoyer l'email
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          console.error("Erreur lors de l'envoi de l'email", error);
-          return res.status(500).json({ message: "Erreur lors de l'envoi de l'email" });
-        }
-        res.status(200).json({ message: "Participation enregistrée et email envoyé." });
-      });
+      res.status(200).json({ message: "Participation enregistrée et email envoyé." });
     });
   } catch (error) {
     console.error("Erreur lors de la gestion de la participation :", error);

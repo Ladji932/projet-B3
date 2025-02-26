@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 
 const {
-    showQrCode,
     Signup,
     DeleteUser,
     participateEvent,
@@ -16,7 +15,6 @@ const checkEventOwner = require("../middleware/checkEventOwner");
 
 
 router.get("/", function(req, res) {res.send("Accueil");});
-router.get("/qrcode/:username/:email", showQrCode);
 router.post("/fetchSignup", Signup);
 router.post("/loginManage",Login);
 router.post("/createEvent", upload, CreateEvents); 
