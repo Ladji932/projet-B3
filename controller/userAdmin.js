@@ -215,21 +215,38 @@ const fetchUser = async (req, res) => {
 
 
 const checkAuth = (req, res) => {
+  console.log("🔹 Requête reçue sur /api/checkAuth");
+
   const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1];
-  
-  console.log("requetes")
-  console.log(token)
+  console.log("🔹 Header Authorization :", authHeader);
 
+  if (!authHeader) {
+    console.log("❌ Aucun header Authorization trouvé");
+    return res.status(401).json({ message: "Non autorisé" });
+  }
 
-  if (!token) return res.status(401).json({ message: "Non autorisé" });
+  const token = authHeader.split(" ")[1];
+  console.log("🔹 Token extrait :", token);
+
+  if (!token) {
+    console.log("❌ Aucun token fourni");
+    return res.status(401).json({ message: "Non autorisé" });
+  }
 
   try {
     const decoded = jwt.verify(token, SECRET_KEY);
-    if (decoded.role !== "admin") throw new Error();
-    res.json({ message: "Utilisateur authentifié" });
-  } catch {
-    res.status(401).json({ message: "Token invalide" });
+    console.log("✅ Token décodé :", decoded);
+
+    if (decoded.role === "user" || decoded.role === "admin") {
+      console.log(`✅ Utilisateur authentifié avec rôle : ${decoded.role}`);
+      return res.json({ message: "Utilisateur authentifié", role: decoded.role });
+    } else {
+      console.log("❌ Rôle non autorisé :", decoded.role);
+      throw new Error("Rôle non autorisé");
+    }
+  } catch (error) {
+    console.log("❌ Erreur lors de la vérification du token :", error.message);
+    return res.status(401).json({ message: "Token invalide" });
   }
 };
 
