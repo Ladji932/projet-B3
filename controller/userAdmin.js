@@ -222,7 +222,8 @@ const checkAuth = (req, res) => {
 
   if (!authHeader) {
     console.log("❌ Aucun header Authorization trouvé");
-    return res.status(401).json({ message: "Non autorisé" });
+    // Pas de token, mais autoriser l'accès selon les besoins
+    return res.status(200).json({ message: "Aucune authentification nécessaire" });
   }
 
   const token = authHeader.split(" ")[1];
@@ -249,7 +250,6 @@ const checkAuth = (req, res) => {
     return res.status(401).json({ message: "Token invalide" });
   }
 };
-
 
 const loginAdmin = (req, res) => {
   const { email, password } = req.body;
