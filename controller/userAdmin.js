@@ -46,36 +46,43 @@ const Login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-      // Recherche de l'utilisateur par email
-      const findUser = await userList.findOne({ email });
-      if (!findUser) {
-          console.log("User not found");
-          return res.status(404).json({ message: "Utilisateur non trouvé" });
-      }
+    // Recherche de l'utilisateur par email
+    const findUser = await userList.findOne({ email });
+    if (!findUser) {
+      console.log("User not found");
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
 
-      // Vérification du mot de passe
-      if (!findUser.password) {
-          console.log("Password not found for user");
-          return res.status(401).json({ message: "Mot de passe non trouvé" });
-      }
+    // Vérification du mot de passe
+    if (!findUser.password) {
+      console.log("Password not found for user");
+      return res.status(401).json({ message: "Mot de passe non trouvé" });
+    }
 
-      const PasswordValidator = await bcrypt.compare(password, findUser.password);
-      if (!PasswordValidator) {
-          return res.status(401).json({ message: "Mot de passe incorrect" });
-      }
+    const PasswordValidator = await bcrypt.compare(password, findUser.password);
+    if (!PasswordValidator) {
+      return res.status(401).json({ message: "Mot de passe incorrect" });
+    }
 
-      // Génération du token
-      const token = jwt.sign({ userId: findUser._id, email: findUser.email }, secretKey, { expiresIn: '1h' });
+    // Génération du token avec un rôle par défaut si non défini
+    const token = jwt.sign(
+      {
+        userId: findUser._id,
+        email: findUser.email,
+        role: findUser.role || 'user',  // Si aucun rôle, assigner 'user' par défaut
+      },
+      secretKey,
+      { expiresIn: '1h' } // Durée de validité du token
+    );
 
-      // Envoie du token dans la réponse
-      res.status(200).json({ message: 'Connexion réussie', token });
+    // Envoie du token dans la réponse
+    res.status(200).json({ message: 'Connexion réussie', token });
 
   } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: "Erreur serveur" });
+    console.error(error);
+    return res.status(500).json({ message: "Erreur serveur" });
   }
-}
-
+};
 
 
 
@@ -214,15 +221,20 @@ const fetchUser = async (req, res) => {
 };
 
 
-const checkAuth = (req, res) => {
+const checkAuth = (req, res, next) => {
   console.log("🔹 Requête reçue sur /api/checkAuth");
+
+  // Vérifie si la route est liée à la connexion
+  if (req.path === '/api/loginManage') {
+    console.log("✅ Connexion autorisée sans token");
+    return next(); // Permet à la requête de passer sans vérification de token
+  }
 
   const authHeader = req.headers.authorization;
   console.log("🔹 Header Authorization :", authHeader);
 
   if (!authHeader) {
     console.log("❌ Aucun header Authorization trouvé");
-    // Pas de token, mais autoriser l'accès selon les besoins
     return res.status(200).json({ message: "Aucune authentification nécessaire" });
   }
 

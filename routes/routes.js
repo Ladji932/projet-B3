@@ -11,7 +11,6 @@ const {
 } = require("../controller/userController");
 const { CreateEvents, upload, fetchEvents, fetchUser, loginAdmin, checkAuth, deleteEventUser, fetchCreatedEvents, updateEventUser, loginWithGoogle , Login } = require("../controller/userAdmin"); 
 const authenticateToken = require("../middleware/authenticateToken");
-const checkEventOwner = require("../middleware/checkEventOwner");
 
 
 router.get("/", function(req, res) {res.send("Accueil");});
